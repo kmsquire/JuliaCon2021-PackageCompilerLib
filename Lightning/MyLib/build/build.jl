@@ -9,5 +9,5 @@ PackageCompiler.create_library(
     lib_name="mylib",
     incremental=false,
     filter_stdlibs=true,
-    header_files = [@__DIR__ * "/mylib.h"],
+    header_files=["$(@__DIR__)/mylib.h"],
 )
