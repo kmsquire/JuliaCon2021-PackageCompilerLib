@@ -1,0 +1,12 @@
+{
+    "slides.vscodeSettings": {
+        "workbench.colorTheme": "Default Light+",
+        "editor.lineNumbers": "off",
+        "editor.fontFamily": "JuliaMono",
+        "terminal.integrated.fontFamily": "JuliaMono"
+    },
+    "slides.previewMarkdownFiles": true,
+    "files.associations": {
+        "*.Makefile": "makefile"
+    }
+}
