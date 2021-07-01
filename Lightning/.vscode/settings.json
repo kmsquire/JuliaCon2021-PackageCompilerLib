@@ -3,7 +3,8 @@
         "workbench.colorTheme": "Default Light+",
         "editor.lineNumbers": "off",
         "editor.fontFamily": "JuliaMono",
-        "terminal.integrated.fontFamily": "JuliaMono"
+        "terminal.integrated.fontFamily": "JuliaMono",
+        "gitlens.currentLine.enabled": false
     },
     "slides.previewMarkdownFiles": true,
     "files.associations": {
