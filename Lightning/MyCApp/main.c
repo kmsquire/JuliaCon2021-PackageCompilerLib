@@ -5,18 +5,18 @@
 int main(int argc, char **argv) {
     init_julia(argc, argv);
 
-    float i = 41.0;
-    double j = 987654320.0;
+    int i = 41;
+    long j = 987654320;
 
-    printf("C: i = %0.0f\n", i);
-    printf("C: j = %0.0f\n", j);
+    printf("C: i = %d\n", i);
+    printf("C: j = %ld\n", j);
 
     printf("C: incrementing i, j\n");
     i = increment32(i);
     j = increment64(j);
 
-    printf("C: i = %0.0f\n", i);
-    printf("C: j = %0.0f\n", j);
+    printf("C: i = %d\n", i);
+    printf("C: j = %ld\n", j);
 
     shutdown_julia(0);
     return 0;
