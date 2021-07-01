@@ -10,4 +10,5 @@ PackageCompiler.create_library(
     incremental=false,
     filter_stdlibs=true,
     header_files=["$(@__DIR__)/mylib.h"],
+    force=true,
 )

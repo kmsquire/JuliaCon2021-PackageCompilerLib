@@ -9,7 +9,7 @@ end
 
 Base.@ccallable function increment32(count::Cint)::Cint
     count = increment(count)
-    println("Incremented count: $count (Cint)")
+    println("julia: $count (Cint)")
     return count
 end
 
