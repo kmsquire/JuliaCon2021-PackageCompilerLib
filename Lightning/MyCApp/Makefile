@@ -1,7 +1,5 @@
-ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-
-LIB_DIR := $(realpath $(ROOT_DIR)/../MyLib/target/lib)
-INCLUDE_DIR := $(realpath $(ROOT_DIR)/../MyLib/target/include)
+LIB_DIR := ../MyLib/target/lib
+INCLUDE_DIR := ../MyLib/target/include
 WLARGS := -Wl,-rpath,"$(LIB_DIR)" -Wl,-rpath,"$(LIB_DIR)/julia"
 
 CFLAGS+=-O2 -fPIE -I$(INCLUDE_DIR)
