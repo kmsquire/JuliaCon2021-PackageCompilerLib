@@ -1,6 +1,6 @@
 # Makefile
 
-MYLIB_INCLUDES = target/include/julia_init.h target/include/mylib.h
+MYLIB_INCLUDES = target/include/mylib.h
 MYLIB_PATH := target/lib/libmylib.so
 
 $(MYLIB_PATH) $(MYLIB_INCLUDES): build/build.jl src/MyLib.jl
