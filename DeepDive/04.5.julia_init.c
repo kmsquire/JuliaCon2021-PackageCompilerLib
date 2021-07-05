@@ -1,10 +1,15 @@
+// julia_init.c
+//
+// This file is part of PackageCompiler.jl, and is compiled into
+// into the sysimage when creating a shared library bundle.
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
 
 #include <libgen.h>
 
-// Julia headers (for initialization and gc commands)
+// Julia header files
 #include "uv.h"
 #include "julia.h"
 
