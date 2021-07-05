@@ -2,11 +2,9 @@
 #include <stdlib.h>
 #include <math.h>
 
-// Julia headers (for initialization and gc commands)
+// Julia initialization and shutdown
 #include "julia_init.h"
 #include "cg.h"
-
-JULIA_DEFINE_FAST_TLS()
 
 
 size_t len = 10;
@@ -35,6 +33,7 @@ int main(int argc, char *argv[])
     b[i] = 1.0;
   };
 
+  // In-place congugate gradient in Julia
   ret = julia_cg(&laplace, x, b, len);
   if (ret) {
     goto done;
