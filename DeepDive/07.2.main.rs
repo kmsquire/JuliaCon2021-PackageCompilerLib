@@ -3,6 +3,7 @@ use std::os::raw::c_char;
 
 extern "C" {
     pub fn init_julia(argc: i32, argv: *const *const c_char);
+    pub fn shutdown_julia(retcode: i32);
 
     pub fn julia_cg(
         fptr: unsafe extern "C" fn(*mut f64, *mut f64) -> i32,
@@ -10,7 +11,6 @@ extern "C" {
         y: *const f64,
         len: u64,
     ) -> i32;
-    pub fn shutdown_julia(retcode: i32);
 }
 
 #[no_mangle]
