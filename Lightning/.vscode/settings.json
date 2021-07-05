@@ -4,7 +4,8 @@
         "editor.lineNumbers": "off",
         "editor.fontFamily": "JuliaMono",
         "terminal.integrated.fontFamily": "JuliaMono",
-        "gitlens.currentLine.enabled": false
+        "gitlens.currentLine.enabled": false,
+        "C_Cpp.errorSquiggles": "Disabled"
     },
     "slides.previewMarkdownFiles": true,
     "files.associations": {
