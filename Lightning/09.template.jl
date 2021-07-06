@@ -6,4 +6,4 @@ lib_template = Template(
         PackageCompilerLib(lib_name="mylib")
     ]
 )
-lib_template("MyLib2")
+lib_template("MyLib")
