@@ -1,0 +1,123 @@
+Hello, my name is Kevin Squire. And today I'll be  doing a deep dive into creating  shared libraries with PackageCompiler.jl. This is work done in collaboration with Nikhil Mitra, Kristoffer Carlsson and Simon Byrne. 
+
+Here's an overview of what I'll be talking about. First I'll  give some motivation why we did this and why you might or might not want to. I'll be going over the anatomy of a Julia installation  including how package compiler recreates this installation. We'll go over the process of creating a shared library using package compiler, and I'll give an example, both in C and in rust, and finally offer some conclusions. 
+
+So why did we do this? At my company, we have a real-time code base written in rust and an optimization algorithm written in Python that we wanted to include, in this real time code base. Now writing high-performance Python is challenging and putting that same code to rust also turned out to be challenging. However, porting it to Julia was trivial. And so instead of spending time porting the Python to rust. We spent time figuring out a simple and easy way to call Julia from rust. And that's what I'll be talking about today. 
+
+Now there are different alternatives for calling into Julia from other languages. People have been embedding Julia in other languages almost as long as Julia has been around. There's a full chapter in the Julia manual on how to embed Julia. There's also many language specific  bindings, including one for rust called jlrs. 
+
+Now, both the embedding Julia chapter in the Julian manual and jlrs use similar paradigms. And we found them to be somewhat cumbersome and challenging to use for our purposes. First of all, they require that Julia and all the packages you require be installed on the system that you're running on. 
+
+Second, the actual act of calling out those libraries was, was somewhat cumbersome. We were looking for a simpler solution.StaticCompiler.jl is another alternative that we have high hopes for. 
+
+StaticCompiler.jl is another approach which uses the LLVM infrastructure to produce machine code directly from Julia code without the need for a Julia runtime. 
+
+  It hasn't seen much activity recently, but I'm hopefully that  an approach like this will eventually be available. In the meantime we have packaged compiler. 
+
+So typically. You would want it, you might want to use this approach. If you have an existing C, C plus plus rust or similar code base written in a language that you can call out to C libraries from. You might have the need for some specific scientific numerical or other functionality. That's easier to write in Julia than in your target language. And while it's not necessary, having that code run in a Docker image, really eases integration. 
+
+There are some limitations to our approach. Because we are creating a C library we're limited to C compatible types in the exposed interface. We can only initialize and call Julia from a single thread in the source language, although multiple threads within Julia are fine. And there's no support yet for installing multiple Julia based C libraries. And as a workaround, you would have to create a Julia package, which pulls in all the other dependencies, which you could then embed in your code base. 
+
+Some, why might you not want to create a library with packaged compiler that JL. If Julia is the primary language of your code base, you probably don't need this. If any of the limitations on the previous slide are showstoppers then using  package compiler is probably not going to work for you. And finally, if you need a lightweight library, then this is probably not your solution as it pulls to the full Julia runtime, and that is not, not exactly light. 
+
+So let's talk a little bit about, about packaged compiler. Package compiler. Up until now has been useful for  a couple of main purposes. One  is creating custom system images or sysimages. This pre compiles common code and libraries so that you do not have to pay for the compilation cost the first time you call it. Using the same technology. Package compiler can create relocatable application bundles. These are just the Julia code. Plus any artifacts that is shared libraries. That are required by packages that you're using. Where the ripple entry point has been replaced by code that calls into  your main function. And which are built in bundled in a way that is relocatable. 
+
+So let's look at the anatomy of a Juliet installation. When you installed Julia, the main part of the installation contains a bin directory with a Julia executable. That's what brings up a REPL when you run it. There's also  a library directory or lib directory, which contains the main Julia libraries, the main system image, and all of the supporting libraries required by the runtime.
+
+It also contains a shared directory with, both base and standard libraries. 
+
+Additionally, each user will have a, dot Julia directory, which contains, additional artifacts and development files and other files that are useful for, the installation. The artifacts library in particular contains additional shared libraries that are required by packages you're using. 
+
+So when we create an application bundle with PackageCompiler.jl,  it looks quite similar. There's a bin directory where instead of the Julia runtime, There's a binary executable call in this case, my app, which is a thin wrapper around Julia code that a user has bundled into a custom Julia sysimage. The library directory looks very much the same with the notable exception of the missing standard, system image, because, well, that's with the, Executable up here. And then there's an in addition, there's an artifacts, directory which contains all additional libraries that, are  needed by packages, you're using. 
+
+So if instead, we're creating a library bundle. It also looks quite similar. In this case, there's no bin directory. The lib directory looks very similar. And then if we're creating a shared library, that also goes into the light of the live directory. 
+
+In addition, there are, there's an include. Directory which contains, which typically contains two include files. One is julia_init.h. The other one would be the header file that corresponds to the functions you're exporting in your shared library. And finally the artifacts are tucked under a shared Julia, library, which again, contain shared, libraries that you might need. 
+
+So what exactly is libmylib.so? It's a Julia system image. And. As you can tell from the extension here, it's also, a C library. So when I, the main idea here. Is to place custom Julia code in the system image and expose a C interface to this code and  package compiler already did most of this. 
+
+ Let's go through an example. Here, we're going to create a conjugate gradient C library. 
+
+This library will export the conjugate gradient method from IterativeSolvers.jl and we'll try calling this, this function from, C or rust.  
+
+So the main program and see what it looks, something like this. 
+
+First  we're going to initialize Julia. 
+
+Just some initialization of some local variables. And then we'll call the conjugated gradient in Julia. This is going to work in place and then return whether or not it was successful. We'll check the result. And then shut down Juliet. 
+
+On the Julia side. 
+
+This is what the code look like. The CG function itself that we're trying to export is already part of iterative solvers. And so we don't need to write anything there. But we do need  to expose an interface to it. In this case, that interface is Julia CG. 
+
+Now, this is the interface that is supposed to be exported from the shared library and the way that we export this function is by annotating it with a ccallable macro. 
+
+You also notice that all of the types in both in the signature, as well as the return type are C compatible types. This function simply wraps the inputs in a way that Julie understands them and calls the conjugate gradient method. And then returns one or zero. As it works in place and modifies these variables. As it's running. 
+
+So we've gone over what the was CG dot jail will look like. We also need a separate mini project to actually build the library. And that's when it looks something like this, it'll have a, it'll have these three files in it. Let's look at build.jl. 
+
+build.jl is a very simple file. Its main purpose is to call the create library function and package Kampala dot JL.  To wish you pass the location of the package that you're trying to wrap. The location of the target and the name of the library, you're trying to create. "lib" will be  prepended to this name. We also pass in any header files that we are, that we created. 
+
+After we run that code, what's generated is something that looks very similar to what we saw before. We have an include directory. Which has the julia_init, and then the header file that we passed in on the previous file. And it has a lib directory with our custom Julia system image in it. Which also,  as we noted is a C shared library. And then we have some artifacts, shown right here. 
+
+This is what it looks like in Linux. And this is what it looks like, under, MacOS, where the extension has changed. Windows is a little bit different? Instead of a lib directory, there's a bin directory. And the main reason is that. 
+
+Windows does not use the same directory structure as a MacOS and Linux do. And so to actually compile this on windows, the typical solution is to drop all these files in the same directory as the executable file that you're trying to, call them from. 
+
+Okay. I've mentioned julia_init dot h acouple of times, and we already saw  that we need to both call initialize Julia and shutdown Julia, from the C program that we wrote. julia_init dot h, just contained signatures for those functions. 
+
+And then the actual functions that those referred to are compiled by package compiler and  included and exported from the shared library that we're creating. And they do exactly what it seems they would do. init_julia sets up arguments and does other things that, are required to initialize the Julia runtime. And shut down, Julia shuts down the Juliet run time. 
+
+So if we call my lib from C a, we've already seen the C library. I'll show it to you again briefly. Again, we'll go. It's going to initialize Julia. 
+
+Call into Julius CG. And then finally get a result, check it. And print out success if it's, if it succeeded. And then finally call shutdown. 
+
+So we're gonna do a quick demo here. 
+
+So here we are in the directory with the main function that I showed you earlier, along with the make file. The shared library has already been compiled. And. 
+
+We've set up the make file in such a way that it can find. The shared library. Run make. 
+
+We can see that it compiles everything. And at the very end, it links in lib c g. So now we have a. Binary called made dash C. And if we run that. We should hopefully get success, which is all we expect from this library. 
+
+All right. So one important component of this is that it's, it's important to be able to find your library both at compile time and run time. To do so at compile time, we need to, add in the include. Make sure that we can find the include files. That's out to see flags with the dash I flag. As well as linker files. So we need to add the location of the library directory. As well as Lincoln, Julia. And, your custom sysimage or your shared library. 
+
+At runtime is another, is another story altogether. There are three ways that we can, find your library at runtime.   One thing we can do is we can install the library globally. This is especially useful. If you, if your code is running in a Docker image. Another option. Is to set the runtime path or rpath. This is possible on Linux or on MacOS. And, the incantation on Linux looks something like this. And on Mac, it looks. The changed the, The change, how the, how you referred to the executable, but it looks something like this. And what this says is that. When looking for shared libraries, if you can start at the, the path of the executable, go up one directory and then look in the lib directory. And then we also need to tell it where to find additional  libraries in the Julia sub-directory. 
+
+The third option, if you. Can't install or cantered, not do not want to install your library globally. And. You may, and if you might not know the relative location, The relative location of your, of the library. Compared to your executable. Well, then you probably needed to set, an environment variable so that the linker can find your library at runtime. What library variable you set depends on what operating system you're on, on Linux rather than CS. You'll set LD library path on Mac. You'll set D Y L D fallback library path. And on windows you'll just  set path. 
+
+And then if we look at the make file that we just used to compile main dash C this is, this is what's done here. On darwin on, that's mac OS, we set the executable about this way or on, Linux, we do it like this. 
+
+Okay. So that's how we call linked to and find the library of the shared library that we created from C a I'm going to go over the same thing from rust. And really the process is pretty much the same. At the high level and the only differences in how you can actually configure it. 
+
+So, let's look at the rust library first. This is this rust program is really just a rust version of the C program we saw earlier. The main function is doing the same things. It's calling init Julia. It's calling out to the conjugate gradient method that we defined, that we, the wrapper that we defined. And then at the end, it's checking the return value. And then at the end, it is shutting down, Julia. Okay. There's a few additional features here. One is that rust does not use header files and we still need, and we do need to tell it the function signatures are the functions that we defined. And so we need to give it a, the function signature for init_julia shutdown_julia, and the Julia CG function. Okay. The, um, other   thing we have here is the laplace function, which I did not actually show you in the, in the main, but this is, a callback that, exists that  is called from the Julia function.  The C program had a C version of this, and this is the rust version , which can also be called back as a C function from Julia. 
+
+And let's go over what we would do from rust. 
+
+We're now in, the rust  directory. This has a few more files in it. And we'll go over some of those in a moment, but in particular,  we can see that the source directory contains the main r s file that I just went over. If we build that file. That's cargo build. 
+
+It finishes and the output is placed in a target folder here, actually, I can. 
+
+Yeah. 
+
+And we can see that it ran. I printed out the norm, which was very small and we got success. 
+
+So as before we have to be able to find our library at compile time now. The idea is still the same, the actual particulars for how you do this in rust are a little bit different. So in particular, When you are setting a. Well, you're, passing in, information to link in dynamic libraries. The idea is the same, but it works a little differently. Usually you create a build dot r s file. Where you pass the path to the library, the names as well as the names of the libraries that you're all looking to. To link. 
+
+And at runtime  we have exactly the same. A story as we had in C. 
+
+Options one and three are exactly the same. Option two is the same as well, but the particulars are different. 
+
+So specifically, if you wish to. Set the r path, you do it in a config dot toml file located in dot cargo. 
+
+And this is what that would look like. 
+
+That's about it. If you've noticed there's been a lot of. Manual setup required for a lot of this. And if that's too much for you, well, we've set up a package template. Recipe for generating the expected Julia structure. At the time of this recording, that's still in merge request. However, it will either be come part of package template, or be pulled into its own package. And then using it will look something like this. Where you go using package templates, you create a. Library templates. Four. The library you wish to create. And then you essentially get it. And when you do. You get a directory structure, which looks similar to the ones I've already shown you, but it's a little bit more complete. Ah, in particular it adds Stubs for test. As a license file or read me. And in for the build directory, it adds an install script. As well as  stubs for generating pre-compiled statements. 
+
+Hopefully you find this useful. 
+
+That's all . These slides as well as all of the code. Mentioned here can be found under this. The link right here and. 
+
+Lip CG itself, is also can also be found in a separate repository, by Simon burn here. 
+
+Hope you enjoyed the talk. 
