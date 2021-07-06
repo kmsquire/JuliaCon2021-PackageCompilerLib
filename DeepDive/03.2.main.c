@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     x[i] = 0.0; b[i] = 1.0;
   };
 
-  // In-place congugate gradient in Julia
+  // In-place conjugate gradient in Julia
   ret = julia_cg(&laplace, x, b, len);
   if (ret) { goto done; }
 

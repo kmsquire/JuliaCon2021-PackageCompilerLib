@@ -1,4 +1,6 @@
-import PackageCompiler, TOML
+# build.jl
+
+import PackageCompiler
 
 const build_dir = @__DIR__
 const target_dir = "target"

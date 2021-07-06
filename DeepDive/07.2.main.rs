@@ -66,6 +66,6 @@ fn main() {
     }
 
     unsafe {
-        shutdown_julia(0);
+        shutdown_julia(ret);
     }
 }

@@ -20,8 +20,8 @@
 PHONY: install clean
 OS := $(shell uname)
 
-WLARGS := -Wl,-rpath,"$(LIBDIR)" -Wl,-rpath,"$(LIBDIR)/julia"
 ifneq ($(OS), Windows)
+	WLARGS := -Wl,-rpath,"$(LIBDIR)" -Wl,-rpath,"$(LIBDIR)/julia"
 	ifeq ($(OS), DARWIN)
 		WLARGS += -Wl,-rpath,@executable_path/../lib
 		WLARGS += -Wl,-rpath,@executable_path/../lib/julia
@@ -31,7 +31,7 @@ ifneq ($(OS), Windows)
 	endif
 endif
 
-CFLAGS+=-O2 -fPIE -I$(JULIA_DIR)/include/julia -I$(INCLUDE_DIR)
+CFLAGS+=-O2 -fPIE -I$(INCLUDE_DIR)
 LDFLAGS+=-lm -L$(LIBDIR) -ljulia $(WLARGS)
 
 main.o: main.c $(LIBCG_INCLUDES)
