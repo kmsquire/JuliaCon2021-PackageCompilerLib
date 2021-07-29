@@ -1,0 +1,8 @@
+main
+*.dylib
+*.so
+*.dll
+*.o
+*~
+Manifest.toml
+/target
