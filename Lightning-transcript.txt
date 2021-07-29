@@ -1,0 +1,53 @@
+Hello.  My name is Kevin Squire, and today, I'm going to be talking to you about creating a shared library, bundle with PackageCompiler.jl.  This is work done in collaboration with Kristoffer Carlson and Simon Byrne. 
+
+First some background, at the company I work at, we have a real-time code based written in rust, and we had some optimization algorithms that were written in Python. As you might know, writing high-performance Python can be challenging. We started to port this code of rust, and also found that to be challenging. Porting it to Julia was trivial. And so instead of spending our time porting our Python code to rust, we spent some time trying to find a nice way to call Julia from rust, which led to the collaboration with Simon and Kristoffer and this work.
+
+Now you might want to create a library with package compiler that JL. If you need to interact with the code base is written in another language. You can call C libraries. If your code is perhaps easier to write and Julia. You are, it's possible to create a cross-platform library. With, with this code and, And especially if you want to distribute a Julia library without requiring the Julia being installed. 
+
+Now, there are some situations where this might not work for you. If you need a lightweight solution, this is definitely not lightweight. It pulls in the full Julia runtime with the library that you create.  If you need to call the library for multiple threads from your target language, that's a no-go.  There may be ways around that, but they require a bit of work.  If you need to install multiple Julia based libraries, this is probably possible, but it is not currently supported. And finally, if Julia is the primary language of your other code base, then this talk is probably not for you. 
+
+There are a number of alternatives for calling into Julia. The most obvious one is the embedding Julia chapter in the Julia manual. There are also a number of  language specific Julia packages. Including one for rust, called jlrs. We actually got our project working with jlrs first, but the cumbersome method for calling Julia functions, along with the need to have Julia and all of the required packages installed, led us to search for a simpler solution.
+
+Let's start off with a minimal package. Called my lib. Which has a single source file and a, project dot Tomal for whatever. Extra packages we need to pull in. In order to create a library from this package, we need to add a few things. We need a, a small build project, which will actually go do the building and I'll make file. Is. Not absolutely necessary, but certainly quite useful or something. Something akin to that would certainly be useful. 
+
+So looking at, my limit self, this is a. An example of how you would start creating a library. We have a function increment that we want to export so that it can be called from C And now if we want to export something as, as part of a C library, the, inputs and outputs have to be typed, first of all, and they have to be C compatible types.  So we can't actually export this function . However, we can wrap that in a, function that has a specific input and output type. And if we do that, we can then export this function. In our, shared library. 
+
+And we do that with this, c callable annotation. 
+
+Okay. And just to make things more interesting. We'll add a, a second. Output. And so this is again, highlighting that we can't, We can just call this function. We can't just call this function with, any type we actually have to explicitly, create separate functions for each of the different types that we want to might want to call our function with.  In order to create a library, we do something like this. We set our target directory, where we are going to output our. Library, we. Choose a library name.  Include a header file okay. Now  when we're creating a C library. The traditional thing to do is to have a header file . And so if we want all of the others to use our library, we need to tell them the signatures of the functions that are in that library.  Okay. Our make file looks, something like this. We have our includes and our. Library, which we want to generate.  We'll start by instantiating the. Project directory and instantiating the bill directory to make sure that everything is, downloaded and up to date. And then we'll call build. 
+
+And that is all we need to do to actually build our library. 
+
+After we call this, we'll get a target directory, which looks something like this. So, you'll notice it has a lib directory,  and then it has  our library. Now this library, in fact is actually just a custom,  sys image that, similar to others that, package. Compiler. Generates. So in addition, our, our header file is, 
+
+Is placed in an include directory and that this is a separate file that package compiler just simply places in here. Julia init  has an initialization function and a shutdown function. These two functions are actually included in. My Linda. So, so when you actually, write your. Main program. Shown here. The first thing we'll do is call  and Julia.  And the last thing we'll do is call a shutdown, Julia. Now of course, we want to make  make sure this works with both, integers and with long values. So well, Calling it a print, a bunch of things from C. I don't know if you remember exactly, but. Back in our implementation. 
+
+We added Julia to the front of our output in Juliet. So let's go back over to where we are now. May there and we will, this is a separate make file for our main. It includes, methods for, finally the Giulia library, which I'll, I'll mention briefly after this. We will link in, Julia Lincoln. Our library that we've generated. And , that's it. All right. Quick demonstration. Okay. 
+
+ Now that we have the library belt, pardon me clean. 
+
+And then we'll run a mate. 
+
+And now if we look at the files that were generated. We have a main function. If we run that. We will see that. 
+
+Prince a number of, things from C. He calls Julia. Increments to numbers. And then. Return to those values back to the seat program. And we successfully created a Juliet. A library that we can call from. See. 
+
+Okay. 
+
+Now, if this seems, overly complicated. It certainly is not lightweight and it does take time to build a library, but, generating the files does not have to be complicated.  There is a, package template for come package, compiler, lib. Which currently exists as a merger quest to package template stuff, JL. And we'll either be merged there or, will become, separate package.  To use that.  You create a template based on, this, with this plugin. For the library or attempting to create, and then instantiate that plugin and it will create a, A library for you. Okay. 
+
+So if all of this seems complicated, it certainly does take some time, but, the actual production of the package does not have to be complicated. We have a merge request to, Package templates. JL for generating, the boiler plate for library creation. Using, using a plugin to practice templates. So you pass, you pass them the name of the library you wish to create, create a template from that and then instantiate, the template. And that will create, The directory, a directory structure with an install script, and a number of other things. 
+
+One of the things you will have to note. Is that. You will need to find your library at compile time. As well as runtime at, compile time. You'll need to. Pass in the include directory. If you assume you use the include files. As well as the live directory. And, To the linker as, and a pass and make sure you link in both Julia. And, your library. 
+
+And to find your library at runtime. This is a separate issue altogether because it may be installed in a different location. You can do one of three things. You can install the library globally. This works well, especially, well, If your program runs inside of a Docker image, because you don't have to worry about traveling or anything else. You can set on Linux and on Mac. Oh, S. 
+
+So add. At a runtime, you can do one of three things. You can install your, library globally. Ah, this works especially, well, if you're running inside of a Docker image, because you don't have to worry about. 
+
+You. Yeah, this works especially, well, if you're running your code inside of a Docker image, because you don't have to worry about trampling anything or, or anything overriding your library. What is your shipment? Another option on. At least on Linux. And, macro class. Is to set the run path or our path. And you would set it to something like. 
+
+This which is incorrect. So I'm going to take this out and redo it. And finally you can set here. You can set environment freckles. 
+
+That's all. The. Slides for this talk as well as code. Here and the slides and code for the corresponding, full talk can be found at, will be funded this URL, And Lipsey. C G as in awe, as in another. Example a library. With full documentation that we'll be going into much more detail in the full, talk that you can find. Here at, under Simon burns. Get hub. 
+
+Repository. That's all.
